@@ -29,6 +29,8 @@
 
 ## 🔧 Architecture Overview
 
+![alt text](image.png)
+
 - **Frontend**: Streamlit (Customers), React + Tailwind (Vendors)
 - **Backend**: FastAPI
 - **Agents**: LangGraph + Model Context Protocol (MCP)
