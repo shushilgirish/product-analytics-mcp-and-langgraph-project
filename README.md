@@ -98,6 +98,11 @@
 - Automated, scalable data pipelines with minimal latency
 
 ---
+## 📚 Resources & References
+
+- [Google CodeLabs](https://codelabs-preview.appspot.com/?file_id=1_936snjPYvoj-RmfO5Vcm2G8xzjVTv0XGRy5wHlFiCo#0)
+
+---
 
 ## 📚 Resources & References
 
