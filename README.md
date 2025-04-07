@@ -97,6 +97,11 @@
 - Provide book-informed strategic Q&A based on marketing theory
 
 ---
+## 📚 Detailed Proeject Explanation
+
+- [Google CodeLabs](https://codelabs-preview.appspot.com/?file_id=1_936snjPYvoj-RmfO5Vcm2G8xzjVTv0XGRy5wHlFiCo#0)
+
+---
 
 ## 📚 Resources & References
 
