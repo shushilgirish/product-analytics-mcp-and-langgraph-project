@@ -1,6 +1,6 @@
-# 🛒 ProductPulse – A Unified E-Commerce Intelligence System
+# 📊 MarketScope – AI-Powered Industry & Segment Intelligence Platform
 
-## 👥 Team 4
+## 👥 Team Members
 - **Yash Khavnekar** – Data Collection, Web Scraping, Sentiment Analysis (MCP)
 - **Shushil Girish** – Agent Integration, Backend + ETL (LangGraph, FastAPI, Airflow)
 - **Riya Mate** – Frontend, Documentation, Codelabs
@@ -9,21 +9,21 @@
 
 ## 📌 Project Overview
 
-**ProductPulse** is an AI-powered, dual-user e-commerce intelligence platform that merges structured insights from **Snowflake Marketplace** with unstructured web data like user reviews and real-time price comparisons. Built using modern data and AI tooling, it serves both **customers** and **vendors** through customized, responsive interfaces.
+**MarketScope** is a scalable AI-powered market intelligence platform designed to democratize access to industry insights. It integrates **structured data** from Snowflake Marketplace with **real-time unstructured data** like product reviews and pricing from leading retailers (Amazon, Target, Walmart). Informed by foundational marketing literature (e.g., *Philip Kotler’s Marketing Management*), the platform delivers pricing analysis, sentiment breakdowns, and market sizing (TAM/SAM/SOM) to help startups, SMBs, and analysts explore opportunities without costly reports or consultants.
 
 ---
 
 ## 🧠 Key Features
 
-### For Customers
-- 🔍 Search products and compare real-time pricing across platforms (Amazon, Walmart, etc.)
-- 💬 Summarized user reviews with pros, cons, and sentiment scores
-- 📊 Dynamic pricing reports and visualizations
+### For Market Researchers & Analysts
+- 📊 Explore U.S. industry outlooks and segment trends
+- 💡 Identify underserved market tiers via TAM/SAM/SOM metrics
+- 🧠 Receive strategy insights aligned with proven marketing frameworks
 
-### For Vendors
-- 📈 KPIs: CTR, conversion rate, sales rank, price index
-- 🧠 AI-generated insights based on historical and competitive data
-- 📦 Sentiment trajectory, complaint tracking, and improvement suggestions
+### For E-commerce Vendors & Product Managers
+- 🔍 Understand price-tier positioning (Cheap, Average, Luxury)
+- 💬 Analyze sentiment from product reviews
+- 📈 Generate strategic go-to-market recommendations
 
 ---
 
@@ -31,13 +31,13 @@
 
 ![alt text](image.png)
 
-- **Frontend**: Streamlit (Customers), React + Tailwind (Vendors)
+- **Frontend**: Streamlit (exploratory dashboard)
 - **Backend**: FastAPI
-- **Agents**: LangGraph + Model Context Protocol (MCP)
+- **Agents**: LangGraph + MCP (Model Context Protocol)
 - **ETL Pipelines**: Apache Airflow
 - **Data Sources**:
-  - Structured: [Similarweb Amazon Dataset (Snowflake Marketplace)](https://app.snowflake.com/marketplace/listing/GZT1ZA3NK6/similarweb-ltd-amazon-and-e-commerce-websites-product-views-and-purchases)
-  - Unstructured: Web scraping (user reviews), Web search (pricing)
+  - Structured: [Snowflake Marketplace – Industry & Segment Data](https://app.snowflake.com/)
+  - Unstructured: Web scraping (reviews) + Web search (pricing)
 
 ---
 
@@ -45,34 +45,33 @@
 
 | Layer              | Tools                                                                 |
 |-------------------|------------------------------------------------------------------------|
-| Backend API       | FastAPI, LangGraph, HuggingFace Transformers, MCP                     |
-| Frontend          | Streamlit, React, TailwindCSS                                          |
-| Agents/LLMs       | GPT-4 via OpenAI, LangChain Tool Abstraction                           |
+| Backend API       | FastAPI, LangGraph, Hugging Face Transformers, MCP                    |
+| Frontend          | Streamlit                                                              |
+| Agents/LLMs       | GPT-4, LangGraph, Marketing Framework Injectors                        |
 | ETL & Scheduling  | Apache Airflow (GCP Composer)                                          |
-| Storage           | Snowflake, PostgreSQL, AWS S3, Redis, Pinecone                        |
+| Storage           | Snowflake, AWS S3, Pinecone                                            |
 | CI/CD & DevOps    | Docker, GitHub Actions, GCP Cloud Run, Artifact Registry              |
 
 ---
 
 ## 🧩 System Flow
 
-1. User enters product query via Streamlit or vendor dashboard.
-2. FastAPI triggers LangGraph agents based on user role.
+1. User selects industry and product segment via Streamlit dashboard.
+2. FastAPI backend triggers LangGraph agents (Industry, Segment, Review, Strategy).
 3. Agents fetch:
-   - Structured KPIs from Snowflake
-   - Reviews via web scraping
-   - Pricing via web search
-4. Data processed and returned via summarization pipelines.
-5. Dashboard updates with real-time analytics, rankings, and insights.
+   - Industry/segment metadata from Snowflake
+   - Review sentiment and pricing via web scraping/search
+   - Strategic insights from Kotler-based frameworks
+4. Insights rendered with TAM/SAM/SOM funnel + visual KPIs
 
 ---
 
 ## 🚀 Deployment
 
-- GCP Cloud Run: FastAPI + Streamlit containers
-- Cloud Composer: DAG orchestration via Apache Airflow
-- GitHub Actions: CI/CD for code and pipeline updates
-- Secrets & Caching: GCP Secret Manager + Redis
+- **Frontend + Backend**: GCP Cloud Run (containerized with Docker)
+- **Pipelines**: Cloud Composer (Airflow DAG orchestration)
+- **CI/CD**: GitHub Actions for pipeline updates and app deployment
+- **Secrets & Cache**: Redis + GCP Secret Manager
 
 ---
 
@@ -80,22 +79,22 @@
 
 | Date       | Milestone                                      |
 |------------|------------------------------------------------|
-| Apr 1–4    | Setup, Dataset access, GitHub repo creation    |
-| Apr 5–7    | ETL pipeline (Airflow + Snowflake)             |
-| Apr 8–9    | Backend API + KPI analysis                     |
-| Apr 10     | Sentiment analysis pipeline                    |
-| Apr 11     | Streamlit UI + integration                     |
-| Apr 12–13  | CI/CD setup, cloud deployment                  |
-| Apr 14     | Final testing, documentation, and demo video   |
+| Apr 1–4    | Dataset access, Industry/Segment definition    |
+| Apr 5–7    | ETL development (Snowflake + Scraping)         |
+| Apr 8–9    | KPI computation, price-tier analysis           |
+| Apr 10     | Strategy framework + Agent integration         |
+| Apr 11     | Streamlit UI + charting                        |
+| Apr 12–13  | CI/CD + Deployment                             |
+| Apr 14     | Final presentation + documentation             |
 
 ---
 
 ## ✅ Goals
 
-- Real-time e-commerce dashboard for product analysis
-- Dual-agent system tailored for buyers and vendors
-- 85%+ sentiment accuracy on labeled data
-- Automated, scalable data pipelines with minimal latency
+- Democratize access to industry research insights
+- Automate market sizing (TAM/SAM/SOM) and tier classification
+- Achieve 90%+ review sentiment classification accuracy
+- Provide book-informed strategic Q&A based on marketing theory
 
 ---
 
@@ -103,30 +102,29 @@
 
 - [FastAPI Docs](https://fastapi.tiangolo.com/)
 - [Streamlit Docs](https://docs.streamlit.io/)
-- [Airflow + Snowflake for E-Commerce](https://www.astronomer.io/docs/learn/reference-architecture-elt-snowflake/)
-- [LangGraph + MCP](https://changelog.langchain.com/announcements/mcp-adapters-for-langchain-and-langgraph)
-- [Deploy FastAPI to Cloud Run](https://testdriven.io/blog/deploying-fastapi-to-cloud-run/)
+- [Airflow + Snowflake Guide](https://www.astronomer.io/docs/)
+- [LangGraph MCP Announcement](https://changelog.langchain.com/)
+- [Marketing Management – Philip Kotler](https://www.pearson.com/)
 
 ---
 
 ## ⚠️ Known Challenges & Solutions
 
-| Challenge | Mitigation |
-|----------|------------|
-| Web scraping block | User-agents, proxies, rate-limiting |
-| Noisy reviews | NLP + LLM summarization |
-| Agent reliability | LangGraph workflows + fallback tools |
-| LLM rate limits | Async processing + Redis caching |
+| Challenge               | Mitigation Strategy                              |
+|------------------------|--------------------------------------------------|
+| Pricing inconsistencies| Normalize via multiple search sources           |
+| Review data quality    | Filter + summarize via LLM pipelines            |
+| Agent coordination     | LangGraph control flows with fallback handlers  |
+| Data latency           | Optimize Airflow + cache recent results         |
 
 ---
 
 ## 📽️ Demo
 
-Coming soon – Stay tuned for a 10-minute walkthrough video!
+Coming soon – A walkthrough showing industry selection, segment drilldown, and strategy Q&A!
 
 ---
 
 ## 📄 License
 
-This project is developed for academic purposes and is shared under the [MIT License](LICENSE).
-
+This project is developed for educational purposes and is licensed under the [MIT License](LICENSE).
