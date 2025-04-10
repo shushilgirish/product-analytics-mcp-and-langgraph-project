@@ -9,6 +9,29 @@ from dotenv import load_dotenv
 load_dotenv()
 api_key = os.getenv("PINECONE_API_KEY")
 
+def verify_pinecone_connection():
+    """Verify Pinecone connection and configuration"""
+    # Print first 5 chars of API key for verification (never print full key)
+    current_key = os.getenv("PINECONE_API_KEY")
+    print(f"Using API key starting with: {current_key[:5]}...")
+    
+    # Initialize Pinecone
+    pinecone.init(api_key=current_key, environment='us-west1-gcp')  # adjust environment as needed
+    
+    # List current indexes
+    current_indexes = pinecone.list_indexes()
+    print(f"Current indexes in account: {current_indexes}")
+    
+    return True
+
+def cleanup_old_connection():
+    """Clean up any existing Pinecone connections"""
+    try:
+        pinecone.deinit()  # This will clear any existing connections
+    except:
+        pass
+    return True
+
 # Define default arguments for the DAG
 default_args = {
     'owner': 'airflow',
