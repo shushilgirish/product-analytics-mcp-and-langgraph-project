@@ -1,20 +1,29 @@
+# For the S3Hook
 apache-airflow-providers-amazon
-pandas
-requests
-selenium
-webdriver-manager
+
+# Memory usage, environment loading, HTTP calls
+psutil
 python-dotenv
-docling
+requests
+
+# For local PDF fallback counting
+PyMuPDF    # fitz
+PyPDF2
+pdf2image  # requires poppler at the system level
+
+# For your Mistral calls
 mistralai>=1.5.1,<2.0.0
-torch>=2.0.0
-numpy
-chromadb==0.4.22
+
+# Pinecone vector storage
 pinecone>=2.0.0
-huggingface-hub==0.16.4
+
+# For embeddings
 sentence-transformers==2.2.2
-transformers==4.36.2
-langchain-text-splitters
-safetensors
-accelerate
-nltk
-scikit-learn
+huggingface_hub==0.11.1
+torch>=2.0.0
+
+# For chunking computations
+numpy
+
+# Add this for OpenAI embeddings
+openai>=1.0.0

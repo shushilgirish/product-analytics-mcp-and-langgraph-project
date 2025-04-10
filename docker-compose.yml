@@ -24,8 +24,8 @@ x-airflow-common:
     - ./Airflow/plugins:/opt/airflow/plugins
     - ./.env:/opt/airflow/.env 
     - ./Backend:/opt/airflow/Backend
-    - ./chroma_db:/opt/airflow/chroma_db
-    - ./Rag_modelings:/opt/airflow/Rag_modelings
+    - ./source-books:/opt/airflow/source-books
+    
   networks:
     - app-network
   user: "${AIRFLOW_UID:-50000}:0"
