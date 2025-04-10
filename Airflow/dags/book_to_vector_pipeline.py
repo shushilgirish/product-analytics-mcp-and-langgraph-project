@@ -1060,23 +1060,63 @@ def process_chunks_and_embeddings(**context):
                         # Add placeholder embedding
                         embeddings.append([0.0] * 1536)
         
-        # Rest of the function remains the same (Pinecone upload, etc.)
-        # [...]
-
         # Initialize Pinecone client
-        from pinecone import Pinecone
+        from pinecone import Pinecone, ServerlessSpec
         pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
         
-        # Verify index exists
+        # Log available indexes for debugging
+        available_indexes = pc.list_indexes().names()
+        logging.info(f"Available Pinecone indexes: {available_indexes}")
+        
+        # Verify index exists or create it
         index_name = PINECONE_INDEX_NAME
-        if index_name not in pc.list_indexes().names():
-            error_msg = f"Pinecone index '{index_name}' not found. Please run setup_pinecone.py first."
-            metrics.error("chunking_and_embedding", error_msg)
-            raise AirflowFailException(error_msg)
+        if index_name not in available_indexes:
+            logging.info(f"Pinecone index '{index_name}' not found. Creating it now...")
+            try:
+                # Create new index
+                pc.create_index(
+                    name=index_name,
+                    dimension=1536,  # OpenAI ada-002 dimensions
+                    metric="cosine",
+                    spec=ServerlessSpec(
+                        cloud="aws",
+                        region="us-east-1"
+                    )
+                )
+                logging.info(f"✅ Created Pinecone index '{index_name}'")
+                
+                # Wait for index to be ready
+                wait_start = time.time()
+                ready = False
+                while not ready and time.time() - wait_start < 300:  # 5 min timeout
+                    try:
+                        index_info = pc.describe_index(index_name)
+                        ready = index_info.status.get('ready', False)
+                        if ready:
+                            break
+                    except Exception as e:
+                        logging.warning(f"Waiting for index readiness... ({str(e)})")
+                    
+                    logging.info("Waiting for index to be ready...")
+                    time.sleep(10)
+                
+                if not ready:
+                    raise TimeoutError("Index creation timed out")
+                    
+                logging.info(f"✅ Pinecone index '{index_name}' is ready")
+            except Exception as e:
+                error_msg = f"Failed to create Pinecone index '{index_name}': {str(e)}"
+                metrics.error("chunking_and_embedding", error_msg, e)
+                raise AirflowFailException(error_msg)
 
         # Get index and verify configuration
         index = pc.Index(index_name)
         index_info = pc.describe_index(index_name)
+        
+        # Log index information for debugging
+        logging.info(f"Connected to Pinecone index: {index_name}")
+        logging.info(f"Index info: dimension={index_info.dimension}, metric={index_info.metric}")
+        
         if index_info.dimension != 1536:
             error_msg = f"Index has wrong dimension: {index_info.dimension} (expected 1536)"
             metrics.error("chunking_and_embedding", error_msg)
@@ -1149,7 +1189,8 @@ def process_chunks_and_embeddings(**context):
         error_msg = f"Error in process_chunks_and_embeddings: {str(e)}"
         metrics.error("chunking_and_embedding", error_msg, e)
         metrics.end_stage("chunking_and_embedding", status="failed")
-        raise AirflowFailException(error_msg)                
+        raise AirflowFailException(error_msg)
+
 # =====================================================================================
 # VALIDATION AND REPORTING
 # =====================================================================================
