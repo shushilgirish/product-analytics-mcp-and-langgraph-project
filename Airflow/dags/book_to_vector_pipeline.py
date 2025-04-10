@@ -8,7 +8,6 @@ Vector dimensions: 384
 import json
 from utils.mistralparsing_userpdf import process_pdf
 from utils.chunking import KamradtModifiedChunker
-from sentence_transformers import SentenceTransformer
 import pinecone
 import os
 import json
