@@ -551,24 +551,39 @@ class QualityValidator:
 
 def locate_pdf(**context) -> str:
     """
-    Locate the PDF file locally.
-    Returns the path to the PDF.
+    Locate the PDF file in S3 and download it locally.
+    Returns the path to the downloaded PDF.
     """
     metrics.start_stage("pdf_location")
 
-    if os.path.exists(BOOK_LOCAL_PATH):
-        logging.info(f"✅ PDF found locally at {BOOK_LOCAL_PATH}")
-        metrics.end_stage("pdf_location", status="success")
+    # Initialize S3 hook
+    s3_hook = S3Hook(aws_conn_id=AWS_CONN_ID)
+    
+    # Check if file exists in S3
+    s3_pdf_key = f"books/{os.path.basename(BOOK_LOCAL_PATH)}"  # Using basename from the config
+    
+    if s3_hook.check_for_key(s3_pdf_key, bucket_name=S3_BUCKET):
+        logging.info(f"✅ PDF found in S3 at s3://{S3_BUCKET}/{s3_pdf_key}")
         
-        # Push to XCom so other tasks can access it
-        context['ti'].xcom_push(key='pdf_path', value=BOOK_LOCAL_PATH)
-        return BOOK_LOCAL_PATH
+        # Create temporary directory to download the file
+        temp_dir = tempfile.mkdtemp(prefix="book_pdf_")
+        local_pdf_path = os.path.join(temp_dir, os.path.basename(BOOK_LOCAL_PATH))
+        
+        # Download the file
+        s3_hook.get_key(s3_pdf_key, bucket_name=S3_BUCKET).download_file(local_pdf_path)
+        logging.info(f"✅ PDF downloaded to {local_pdf_path}")
+        
+        # Store temp directory for later cleanup
+        context['ti'].xcom_push(key='temp_dir', value=temp_dir)
+        context['ti'].xcom_push(key='pdf_path', value=local_pdf_path)
+        
+        metrics.end_stage("pdf_location", status="success")
+        return local_pdf_path
     else:
-        error_msg = f"❌ PDF not found at local path: {BOOK_LOCAL_PATH}"
+        error_msg = f"❌ PDF not found in S3: s3://{S3_BUCKET}/{s3_pdf_key}"
         metrics.error("pdf_location", error_msg)
         metrics.end_stage("pdf_location", status="failed")
         raise AirflowFailException(error_msg)
-
 
 def process_pdf_with_mistral(**context) -> dict:
     """
@@ -609,16 +624,6 @@ def process_pdf_with_mistral(**context) -> dict:
             extraction_time=duration,
             char_count=char_count,
             validation_score=1.0
-        )
-        
-        # Optionally upload to S3
-        s3_hook = S3Hook(aws_conn_id="aws_default")
-        s3_key = f"my-markdown/{os.path.basename(markdown_path)}"
-        s3_hook.load_file(
-            filename=markdown_path,
-            key=s3_key,
-            bucket_name=S3_BUCKET,
-            replace=True
         )
         
         # XCom push path for the next step
@@ -863,11 +868,14 @@ def store_chunks_s3(chunks, s3_hook, book_name):
     logging.info(f"Stored {len(chunks)} chunks in S3: s3://{S3_BUCKET}/{chunks_key}")
     
     return chunks_key
+def estimate_tokens(text):
+    """Estimate token count for OpenAI models - moderately conservative (3 chars per token)"""
+    return len(text) // 3  # Balanced estimation that's still safely conservative
 
 def process_chunks_and_embeddings(**context):
     """
     Process chunks and create embeddings using OpenAI ada-002.
-    Assumes Pinecone index already exists (run setup_pinecone.py first).
+    Uses balanced chunking to avoid token limits while maintaining efficiency.
     """
     metrics.start_stage("chunking_and_embedding")
     ti = context['ti']
@@ -885,38 +893,175 @@ def process_chunks_and_embeddings(**context):
         with open(markdown_path, "r", encoding="utf-8") as f:
             markdown_text = f.read()
 
-        # Use KamradtModifiedChunker for text splitting
-        chunker = KamradtModifiedChunker(avg_chunk_size=300, min_chunk_size=50)
-        chunks = chunker.split_text(markdown_text)
-        logging.info(f"Created {len(chunks)} chunks from markdown text")
-        # ✨ NEW: Store full chunks in S3 before embedding
+        # Use KamradtModifiedChunker for text splitting - use moderate chunk size
+        chunker = KamradtModifiedChunker(avg_chunk_size=300, min_chunk_size=100)  # More reasonable chunk size
+        raw_chunks = chunker.split_text(markdown_text)
+        logging.info(f"Created {len(raw_chunks)} initial chunks from markdown text")
+        
+        # Process chunks to ensure they don't exceed token limits
+        MAX_TOKENS = 2500  # About 1/3 of the API limit (balanced approach)
+        chunks = []
+        
+        for chunk_idx, chunk in enumerate(raw_chunks):
+            # Estimate tokens in chunk
+            estimated_tokens = estimate_tokens(chunk)
+            
+            if estimated_tokens <= MAX_TOKENS:
+                chunks.append(chunk)
+            else:
+                # Split large chunk into smaller pieces - log a warning
+                logging.warning(f"Splitting large chunk #{chunk_idx} with ~{estimated_tokens} tokens ({len(chunk)} chars)")
+                
+                # Split by paragraphs first if possible
+                paragraphs = chunk.split('\n\n')
+                
+                if len(paragraphs) > 1:
+                    current_chunk = ""
+                    for para in paragraphs:
+                        para_tokens = estimate_tokens(para)
+                        
+                        # If a single paragraph is too large, force split it
+                        if para_tokens > MAX_TOKENS:
+                            # Add any accumulated content first
+                            if current_chunk:
+                                chunks.append(current_chunk)
+                                current_chunk = ""
+                                
+                            # Split paragraph by sentences
+                            sentences = re.split(r'(?<=[.!?])\s+', para)
+                            current_sent = ""
+                            
+                            for sentence in sentences:
+                                sent_tokens = estimate_tokens(current_sent + sentence)
+                                if sent_tokens > MAX_TOKENS:
+                                    if current_sent:
+                                        chunks.append(current_sent)
+                                        current_sent = sentence
+                                    else:
+                                        # Emergency case - split by fixed size if a sentence is too long
+                                        char_limit = MAX_TOKENS * 3  # Based on our token estimation
+                                        for i in range(0, len(sentence), char_limit):
+                                            chunks.append(sentence[i:i+char_limit])
+                                else:
+                                    if current_sent:
+                                        current_sent += " " + sentence
+                                    else:
+                                        current_sent = sentence
+                            
+                            if current_sent:
+                                chunks.append(current_sent)
+                        # Regular case - check if adding this paragraph exceeds our limit
+                        elif estimate_tokens(current_chunk + para) > MAX_TOKENS:
+                            chunks.append(current_chunk)
+                            current_chunk = para
+                        else:
+                            if current_chunk:
+                                current_chunk += "\n\n" + para
+                            else:
+                                current_chunk = para
+                    
+                    # Add any remaining content
+                    if current_chunk:
+                        chunks.append(current_chunk)
+                else:
+                    # Force split by sentences as there are no paragraphs
+                    sentences = re.split(r'(?<=[.!?])\s+', chunk)
+                    current_chunk = ""
+                    
+                    for sentence in sentences:
+                        if estimate_tokens(current_chunk + sentence) > MAX_TOKENS:
+                            if current_chunk:
+                                chunks.append(current_chunk)
+                                current_chunk = sentence
+                            else:
+                                # Emergency split if sentence is too long
+                                char_limit = MAX_TOKENS * 3
+                                for i in range(0, len(sentence), char_limit):
+                                    chunks.append(sentence[i:i+char_limit])
+                        else:
+                            if current_chunk:
+                                current_chunk += " " + sentence
+                            else:
+                                current_chunk = sentence
+                    
+                    if current_chunk:
+                        chunks.append(current_chunk)
+        
+        logging.info(f"After token limit processing: {len(chunks)} chunks")
+        
+        # Store full chunks in S3 before embedding
         s3_hook = S3Hook(aws_conn_id=AWS_CONN_ID)
         chunks_s3_key = store_chunks_s3(chunks, s3_hook, BOOK_NAME)
         logging.info(f"Stored full chunks in S3: s3://{S3_BUCKET}/{chunks_s3_key}")
         ti.xcom_push(key='chunks_s3_key', value=chunks_s3_key)
-        # Initialize OpenAI client
-        from openai import OpenAI
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         
-        # Process embeddings in batches
+        # Initialize OpenAI client
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        except TypeError as e:
+            if 'proxies' in str(e):
+                # Handle case where proxies are being passed from environment
+                import httpx
+                # Create client without proxies
+                client = OpenAI(
+                    api_key=os.getenv("OPENAI_API_KEY"),
+                    http_client=httpx.Client()
+                )
+            else:
+                raise
+        
+        # Process chunks in small batches to avoid rate limits but be faster than one-by-one
         embeddings = []
-        batch_size = 20  # Adjust based on OpenAI rate limits
+        batch_size = 5  # Small batch size to balance speed and reliability
         
         logging.info(f"Generating OpenAI embeddings for {len(chunks)} chunks...")
         for i in range(0, len(chunks), batch_size):
+            # Get batch of chunks
             batch = chunks[i:i+batch_size]
+            
+            # Add delay between batches to avoid rate limits
+            if i > 0:
+                time.sleep(1)
+            
+            # Final safety check for each chunk in the batch
+            safe_batch = []
+            for chunk in batch:
+                if len(chunk) > 7500:  # About 2500 tokens with our estimation
+                    safe_batch.append(chunk[:7500])  # Truncate if necessary
+                else:
+                    safe_batch.append(chunk)
+            
             try:
                 response = client.embeddings.create(
                     model="text-embedding-ada-002",
-                    input=batch
+                    input=safe_batch
                 )
                 batch_embeddings = [item.embedding for item in response.data]
                 embeddings.extend(batch_embeddings)
-                logging.info(f"Embedded chunks {i} to {i+len(batch)} of {len(chunks)}")
+                if i % 50 == 0:  # Log progress every 50 batches
+                    logging.info(f"Embedded chunks {i} to {i+len(batch)} of {len(chunks)}")
             except Exception as e:
                 error_msg = f"Error generating embeddings for batch {i}: {str(e)}"
                 metrics.error("embedding_generation", error_msg, e)
-                # Continue with remaining batches
+                
+                # Fall back to individual processing for this batch
+                for j, chunk in enumerate(safe_batch):
+                    try:
+                        time.sleep(2)  # Longer delay after an error
+                        response = client.embeddings.create(
+                            model="text-embedding-ada-002",
+                            input=[chunk]
+                        )
+                        embeddings.append(response.data[0].embedding)
+                    except Exception as e2:
+                        error_msg = f"Error on individual chunk {i+j}: {str(e2)}"
+                        metrics.error("embedding_generation", error_msg, e2)
+                        # Add placeholder embedding
+                        embeddings.append([0.0] * 1536)
+        
+        # Rest of the function remains the same (Pinecone upload, etc.)
+        # [...]
 
         # Initialize Pinecone client
         from pinecone import Pinecone
@@ -971,6 +1116,8 @@ def process_chunks_and_embeddings(**context):
             except Exception as e:
                 error_msg = f"Error upserting batch {i}: {str(e)}"
                 metrics.error("vector_upload", error_msg, e)
+                # Add delay after errors
+                time.sleep(3)
 
         # Record metrics and end stage
         metrics.end_stage("chunking_and_embedding", status="success", metrics={
@@ -1002,8 +1149,7 @@ def process_chunks_and_embeddings(**context):
         error_msg = f"Error in process_chunks_and_embeddings: {str(e)}"
         metrics.error("chunking_and_embedding", error_msg, e)
         metrics.end_stage("chunking_and_embedding", status="failed")
-        raise AirflowFailException(error_msg)
-    
+        raise AirflowFailException(error_msg)                
 # =====================================================================================
 # VALIDATION AND REPORTING
 # =====================================================================================

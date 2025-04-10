@@ -3,7 +3,7 @@
   "S3_BUCKET": "finalproject-product",
   "S3_BASE_FOLDER": "book-content",
   "BOOK_NAME": "S3D7W4_Marketing_Management.pdf",
-  "BOOK_S3_PATH": "source-books/S3D7W4_Marketing_Management.pdf",
+  "BOOK_S3_PATH": "books/S3D7W4_Marketing_Management.pdf",
   "BOOK_LOCAL_PATH": "/opt/airflow/source-books/S3D7W4_Marketing_Management.pdf",
   "CHUNK_SIZE": 1000,
   "CHUNK_OVERLAP": 200,
