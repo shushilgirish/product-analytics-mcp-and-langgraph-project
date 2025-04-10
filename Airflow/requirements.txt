@@ -1,29 +1,8 @@
-# For the S3Hook
-apache-airflow-providers-amazon
-
-# Memory usage, environment loading, HTTP calls
-psutil
-python-dotenv
+openai==1.14.2
+pinecone-client==3.0.2
+pandas
 requests
-
-# For local PDF fallback counting
-PyMuPDF    # fitz
-PyPDF2
-pdf2image  # requires poppler at the system level
-
-# For your Mistral calls
-mistralai>=1.5.1,<2.0.0
-
-# Pinecone vector storage
-pinecone>=2.0.0
-
-# For embeddings
-sentence-transformers==2.2.2
-huggingface_hub==0.11.1
-torch>=2.0.0
-
-# For chunking computations
+psutil
 numpy
-
-# Add this for OpenAI embeddings
-openai>=1.0.0
+# airflow-specific
+apache-airflow==2.10.4

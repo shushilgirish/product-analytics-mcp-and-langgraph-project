@@ -550,49 +550,6 @@ class QualityValidator:
 # PDF PROCESSING FUNCTIONS
 # =====================================================================================
 
-def get_pdf_page_count(pdf_path: str) -> int:
-    """
-    Determine the number of pages in a PDF using available libraries.
-    Attempts multiple methods with fallbacks.
-    """
-    logging.info(f"Getting page count for PDF: {pdf_path}")
-    
-    # Method 1: Try using PyPDF2
-    try:
-        import PyPDF2
-        with open(pdf_path, 'rb') as pdf_file:
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-            count = len(pdf_reader.pages)
-            logging.info(f"PyPDF2 found {count} pages")
-            return count
-    except Exception as e:
-        logging.warning(f"PyPDF2 page count failed: {e}")
-    
-    # Method 2: Try using pdf2image (requires poppler)
-    try:
-        from pdf2image.pdf2image import pdfinfo_from_path
-        info = pdfinfo_from_path(pdf_path)
-        count = info["Pages"]
-        logging.info(f"pdf2image found {count} pages")
-        return count
-    except Exception as e:
-        logging.warning(f"pdf2image page count failed: {e}")
-    
-    # Method 3: Try using PyMuPDF/fitz
-    try:
-        import fitz
-        doc = fitz.open(pdf_path)
-        count = len(doc)
-        doc.close()
-        logging.info(f"PyMuPDF found {count} pages")
-        return count
-    except Exception as e:
-        logging.warning(f"PyMuPDF page count failed: {e}")
-    
-    # Fallback: Use the 833 page count from requirements
-    logging.warning("All page count methods failed. Using default value from requirements (833)")
-    return 833
-
 def locate_pdf(**context) -> str:
     """
     Locate the PDF file locally.
