@@ -40,6 +40,68 @@
   - Unstructured: Web scraping (reviews) + Web search (pricing)
 
 ---
+## File Structure
+```
+MarketScope-AI-Powered-Industry-Segment-Intelligence-Platform/
+│
+├── Airflow/                            # Airflow pipeline components
+│   ├── dags/                           # Airflow DAGs
+│   │   └── book_to_vector_pipeline.py  # PDF processing pipeline
+│   ├── config/                         # Configuration files
+│   │   └── book.json                   # Book processing config
+│   └── utils/                          # Utility modules
+│       ├── mistralparsing_userpdf.py   # PDF parsing
+│       └── chunking.py                 # Text chunking utilities
+│
+├── mcp_server/                         # Master Control Program server
+│   ├── __init__.py
+│   ├── server.py                       # Main MCP server implementation
+│   ├── config.py                       # Server configuration
+│   ├── models.py                       # Data models for MCP
+│   ├── utils/                          # MCP utilities
+│   │   ├── __init__.py
+│   │   ├── auth.py                     # Authentication utilities
+│   │   └── logging.py                  # Logging configuration
+│   └── services/                       # Core MCP services
+│       ├── __init__.py
+│       ├── session_manager.py          # Session management
+│       ├── agent_registry.py           # Agent registration/discovery 
+│       └── task_queue.py               # Task scheduling
+│
+├── agents/                             # Specialized agents
+│   ├── __init__.py
+│   ├── base_agent.py                   # Base agent class
+│   ├── analysis_agent/                 # Analysis agent
+│   │   ├── __init__.py
+│   │   ├── server.py                   # Analysis agent server
+│   │   └── analyzers/                  # Analysis modules
+│   │       └── market_analyzer.py      # Market analysis
+│   │
+│   ├── research_agent/                 # Research agent
+│   │   ├── __init__.py
+│   │   ├── server.py                   # Research agent server
+│   │   └── knowledge_base.py           # Knowledge retrieval
+│   │
+│   └── marketing_agent/                # Marketing agent
+│       ├── __init__.py
+│       ├── server.py                   # Marketing agent server
+│       └── generators/                 # Content generation
+│           └── content_generator.py    # Marketing content
+│
+├── client/                             # Client applications
+│   ├── cli/                            # Command line interface
+│   │   └── marketscope_cli.py          # CLI tool
+│   └── web/                            # Web interface
+│       ├── app.py                      # Web app
+│       ├── static/                     # Static assets
+│       └── templates/                  # HTML templates
+│
+├── setup_pinecone.py                   # Pinecone setup script
+├── requirements.txt                    # Dependencies
+├── .env.example                        # Example environment variables
+├── README.md                           # Project documentation
+└── docker-compose.yml                  # Container orchestration
+```
 
 ## 🧱 Tech Stack
 
