@@ -67,7 +67,7 @@ CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
 MAX_WORKERS = 4  # For parallel processing
 EMBEDDING_DIMENSION = 1536  # ✅ CHANGE: Updated for OpenAI embeddings
-PINECONE_INDEX_NAME = "healthcare-product-analytics"  # ✅ CHANGE: New index name
+PINECONE_INDEX_NAME =  config["PINECONE_INDEX_NAME"]  # ✅ CHANGE: Added index name
 PINECONE_NAMESPACE = "book-kotler"  # ✅ CHANGE: Added namespace
 # Default arguments for DAG
 default_args = {
@@ -1068,7 +1068,7 @@ def process_chunks_and_embeddings(**context):
         pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
         
         # Verify index exists
-        index_name = "healthcare-product-analytics"
+        index_name = PINECONE_INDEX_NAME
         if index_name not in pc.list_indexes().names():
             error_msg = f"Pinecone index '{index_name}' not found. Please run setup_pinecone.py first."
             metrics.error("chunking_and_embedding", error_msg)

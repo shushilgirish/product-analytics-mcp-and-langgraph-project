@@ -10,5 +10,5 @@
   "BATCH_SIZE": 50,
   "MAX_WORKERS": 4,
   "EMBEDDING_DIMENSION": 384,
-  "PINECONE_INDEX_NAME": "marketing-book"
+  "PINECONE_INDEX_NAME": "healthcare-product-analytics"
 }
