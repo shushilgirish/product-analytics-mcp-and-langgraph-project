@@ -38,7 +38,7 @@ def create_test_index():
             metric='cosine',
             spec=ServerlessSpec(
                 cloud='aws',
-                region='us-west-2'  # adjust region as needed
+                region='us-east-1'  # adjust region as needed
             )
         )
         print(f"Created new index: {index_name}")
