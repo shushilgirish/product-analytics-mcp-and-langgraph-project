@@ -1,7 +1,7 @@
-# Use Airflow base image
-FROM apache/airflow:2.10.4
+# Use Astronomer Runtime as base image
+FROM quay.io/astronomer/astro-runtime:12.8.0
 
-# Switch to root to install system dependencies
+# Install system dependencies
 USER root
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -26,14 +26,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get update && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /opt/airflow/chroma_db && chown -R airflow:root /opt/airflow/chroma_db
 
-USER airflow
+USER astro
 
 # Upgrade pip tools
 RUN pip install --upgrade pip setuptools wheel
 
-# Copy filtered requirements
-COPY Airflow/requirements.txt /tmp/requirements.txt
+# Copy requirements
+COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r /tmp/requirements.txt --prefer-binary
+RUN pip install --no-cache-dir -r requirements.txt --prefer-binary
